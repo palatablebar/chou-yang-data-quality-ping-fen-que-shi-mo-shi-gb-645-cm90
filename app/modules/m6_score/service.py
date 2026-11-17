@@ -71,6 +71,7 @@ def run(settings: config.Settings, store, *, name: str | None = None,
         "rows_accepted": len(profile["rows"]),
         "rows_dup": duplicates["duplicate_rows"],
         "outlier_cells": outliers["counts"]["outlier_cells"],
+        "quality_outlier_cells": outliers["counts"]["quality_outlier_cells"],
         "tested_cells": outliers["counts"]["tested_cells"],
     }
     scored = score_mod.evaluate(counts)
@@ -94,6 +95,8 @@ def run(settings: config.Settings, store, *, name: str | None = None,
         "rows_unique": duplicates["unique_rows"],
         "rows_dup": duplicates["duplicate_rows"],
         "outlier_cells": counts["outlier_cells"],
+        "quality_outlier_cells": counts["quality_outlier_cells"],
+        "slow_service_cells": outliers["counts"]["slow_service_cells"],
         "tested_cells": counts["tested_cells"],
         "segments": ingest["segments"],
     }
@@ -186,6 +189,7 @@ def _reconcile(ingest: dict, profile: dict, missing: dict, duplicates: dict,
     cells_ok = profile["counts"]["cells_ok"]
     penalty_sum = Decimal(scored["penalty_sum"])
     total_score = Decimal(scored["score"])
+    adjudication = outliers["adjudication"]["counts"]
     accounts = [
         _account("rows", "数据行账", counts["raw_records"],
                  counts["accepted"] + counts["quarantine"] + counts["blank"],
@@ -201,6 +205,12 @@ def _reconcile(ingest: dict, profile: dict, missing: dict, duplicates: dict,
                  "有值 = 合格 + 格式不合格"),
         _account("score", "分数账", Decimal("100"), total_score + penalty_sum,
                  "总分 + 扣分 = 100"),
+        _account("outlier_split", "离群裁决账", adjudication["flagged_cells"],
+                 adjudication["quality_cells"] + adjudication["review_cells"],
+                 "首响离群格 = 质量异常 + 慢服务复核"),
+        _account("ticket_split", "裁决工单账", adjudication["tickets"],
+                 adjudication["quality_tickets"] + adjudication["review_tickets"],
+                 "裁决工单 = 质量异常工单 + 慢服务复核工单（互斥）"),
     ]
     return {
         "accounts": accounts,

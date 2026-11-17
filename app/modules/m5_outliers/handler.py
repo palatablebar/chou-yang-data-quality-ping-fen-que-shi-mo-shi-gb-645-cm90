@@ -17,7 +17,8 @@ def api_outliers(run_id: str | None = None, ctx: Ctx = Depends(get_ctx)) -> dict
     outliers = result["outliers"]
     return {"run_id": run["run_id"], "dataset": run["name"],
             "counts": outliers["counts"], "columns": outliers["columns"],
-            "cells": outliers["cells"], "degenerate": outliers["degenerate"]}
+            "cells": outliers["cells"], "degenerate": outliers["degenerate"],
+            "adjudication": outliers["adjudication"]}
 
 
 @router.get("/outliers")

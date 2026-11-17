@@ -43,6 +43,7 @@ def build(result: dict) -> dict:
         "bars": bars,
         "bands": score["bands"],
         "counters": counters,
+        "adjudication": result["outliers"]["adjudication"],
         "columns": profile_rows[:7],
         "empty_columns": result["profile"]["counts"]["empty_columns"],
         "accounts": result["reconcile"]["accounts"],

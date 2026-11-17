@@ -23,6 +23,7 @@ def csv_text(header: list[str], rows: list[list]) -> str:
 def report_csv(result: dict) -> str:
     score = result["score"]
     counters = result["manifest"]["counters"]
+    adjudication = result["outliers"]["adjudication"]["counts"]
     rows = [
         ["总分", score["score"], "分", "刻度 0.01"],
         ["等级", score["grade"], "", score["grade_label"]],
@@ -41,6 +42,17 @@ def report_csv(result: dict) -> str:
         ["单元格", counters["cells_total"], "格", ""],
         ["缺失单元格", counters["cells_missing"], "格", ""],
         ["离群单元格", counters["outlier_cells"], "格", "有值的子集"],
+        ["计扣离群格", counters["quality_outlier_cells"], "格",
+         "离群格 − 慢服务复核格，离群维扣分分子"],
+        ["首响离群格", adjudication["flagged_cells"], "格",
+         "质量异常 + 慢服务复核"],
+        ["质量异常格", adjudication["quality_cells"], "格",
+         "首响超总处理时长，计扣"],
+        ["慢服务复核格", adjudication["review_cells"], "格",
+         "物理自洽或无法核对，不计扣"],
+        ["质量异常工单", adjudication["quality_tickets"], "工单", ""],
+        ["慢服务复核工单", adjudication["review_tickets"], "工单",
+         "与质量异常工单互斥"],
     ])
     return csv_text(["项目", "数值", "单位", "备注"], rows)
 
@@ -91,11 +103,29 @@ def outliers_csv(result: dict) -> str:
     rows = []
     for item in result["outliers"]["cells"]:
         column = stats.get(item["column"], {})
+        verdict = item.get("verdict_label", "")
+        # 慢服务复核格不计扣；其余离群格（含非首响列）都计扣
+        charge = "否" if item.get("verdict") == "review" else "是"
         rows.append([item["column"], column.get("label", item["column"]),
                      item["lineno"], item["raw"], item["value"], item["z"],
-                     column.get("method", ""), "K_OUTLIER"])
+                     column.get("method", ""), "K_OUTLIER",
+                     verdict, item.get("verdict_code", ""), charge])
     return csv_text(["列名", "列标题", "行号", "原值", "归一值", "稳健z", "方法",
-                     "原因码"], rows)
+                     "原因码", "裁决范围", "裁决原因码", "计扣"], rows)
+
+
+def adjudication_csv(result: dict) -> str:
+    """首响离群裁决：质量异常与慢服务复核两个范围同出一份，逐格可回工单。"""
+    adjudication = result["outliers"]["adjudication"]
+    rows = []
+    for scope, entries in (("质量异常", adjudication["defects"]),
+                           ("慢服务复核", adjudication["reviews"])):
+        for item in entries:
+            rows.append([scope, item["ticket_id"], item["lineno"], item["raw"],
+                         item["value"], item["z"], item["handle_hours"],
+                         item["limit_min"], item["code"], item["note"]])
+    return csv_text(["范围", "工单号", "行号", "原值", "归一值(分钟)", "稳健z",
+                     "处理时长(小时)", "首响上限(分钟)", "原因码", "说明"], rows)
 
 
 def quarantine_csv(result: dict) -> str:

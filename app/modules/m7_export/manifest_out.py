@@ -27,6 +27,7 @@ def build(result: dict) -> dict:
         "score": result["score"]["score"],
         "grade": result["score"]["grade"],
         "penalty_sum": result["score"]["penalty_sum"],
+        "adjudication_rule": result["outliers"]["adjudication"]["rule"],
         "counters": manifest["counters"],
         "accounts": manifest["accounts"],
         "all_balanced": manifest["all_balanced"],

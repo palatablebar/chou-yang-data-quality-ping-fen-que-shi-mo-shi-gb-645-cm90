@@ -31,6 +31,8 @@ REASONS: dict[str, dict[str, str]] = {
     "K_BAD_FORMAT": {"label": "格式无法解析", "level": "warn"},
     "K_OUT_OF_RANGE": {"label": "取值越界", "level": "warn"},
     "K_OUTLIER": {"label": "稳健离群", "level": "warn"},
+    "K_RESPONSE_GT_HANDLE": {"label": "首响超总处理时长", "level": "warn"},
+    "K_SLOW_SERVICE": {"label": "慢服务复核", "level": "info"},
     "K_DEGENERATE": {"label": "列退化无法判离群", "level": "info"},
     "K_MISSING_RUN": {"label": "连续缺失段", "level": "info"},
     "K_DUP_HASH": {"label": "全行重复", "level": "info"},

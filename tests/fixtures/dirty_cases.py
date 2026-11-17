@@ -88,6 +88,8 @@ def score_of(payload: dict) -> dict:
         "rows_accepted": len(prof["rows"]),
         "rows_dup": payload["duplicates"]["duplicate_rows"],
         "outlier_cells": payload["outliers"]["counts"]["outlier_cells"],
+        "quality_outlier_cells":
+            payload["outliers"]["counts"]["quality_outlier_cells"],
         "tested_cells": payload["outliers"]["counts"]["tested_cells"],
     }
     return score_module.evaluate(counts)
@@ -195,4 +197,27 @@ def fullwidth_thousands_case() -> str:
     rows = count_rows(4)
     rows.append(make_row(ticket="T-2026-940001", customer="00941",
                          response="１，２０４.５"))
+    return frame(rows)
+
+
+def adjudication_case() -> str:
+    """首响离群三种去向：录错（>处理时长×60）、真实慢服务、处理时长缺失无法核对。
+
+    基线 8 行首响在 18–22 间波动（MAD>0，900 才判得出离群）；三条特殊行
+    首响都是 900.0：一条处理 2.50（上限 150 → 数据缺陷）、一条处理 20.00
+    （上限 1200 → 慢服务复核）、一条处理时长缺失（无法核对 → 慢服务复核）。
+    """
+    rows = []
+    for index in range(8):
+        rows.append(make_row(ticket=f"T-2026-95{index + 100:04d}",
+                             customer=f"00{950 + index}",
+                             response=f"{18 + index % 5}.0", handle="2.50"))
+    rows.extend([
+        make_row(ticket="T-2026-950001", customer="00951",
+                 response="900.0", handle="2.50"),
+        make_row(ticket="T-2026-950002", customer="00952",
+                 response="900.0", handle="20.00"),
+        make_row(ticket="T-2026-950003", customer="00953",
+                 response="900.0", handle=""),
+    ])
     return frame(rows)

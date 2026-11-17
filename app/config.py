@@ -20,7 +20,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CHINA_TZ = dt.timezone(dt.timedelta(hours=8), "Asia/Shanghai")
 UTC = dt.timezone.utc
 
-RULE_VERSION = "qualiscore/1.0.0"
+RULE_VERSION = "qualiscore/1.1.0"
 SCORE_QUANT = Decimal("0.01")
 RATE_QUANT = Decimal("0.0001")
 HUNDRED = Decimal("100")
@@ -33,6 +33,13 @@ MIN_ROBUST_SAMPLE = 4
 MISSING_RUN_MIN = 3
 # 稳健离散度下限：至少能分辨 5 个刻度，否则该列不判离群（低分辨率记退化）
 MIN_SPREAD_STEPS = 5
+
+# 首响离群裁决：首响(分钟) > 处理时长(小时) × HANDLE_TO_MINUTES 物理不可能，
+# 判数据缺陷（计入离群维扣分）；其余离群首响（物理自洽的长值，或处理时长
+# 缺失/格式不合格无法证伪）进慢服务复核，不参与质量扣分。
+RESPONSE_COLUMN = "first_response_min"
+HANDLE_COLUMN = "handle_hours"
+HANDLE_TO_MINUTES = Decimal("60")
 
 # 空值哨兵集中定义：None / 空串 / 空白串 / 哨兵 四态在 M2 里分辨后统一成 missing
 SENTINELS = frozenset(

@@ -37,7 +37,9 @@ def rules_digest(rule_version: str) -> str:
     for item in config.GRADES:
         parts.append(f"{item['grade']}:{item['floor']}")
     parts.extend([f"mad={config.MAD_SCALE}", f"iqr={config.IQR_SCALE}",
-                  f"z={config.ROBUST_Z_LIMIT}", f"run={config.MISSING_RUN_MIN}"])
+                  f"z={config.ROBUST_Z_LIMIT}", f"run={config.MISSING_RUN_MIN}",
+                  f"adj={config.RESPONSE_COLUMN}>{config.HANDLE_COLUMN}"
+                  f"x{config.HANDLE_TO_MINUTES}"])
     return digest_parts(parts)
 
 

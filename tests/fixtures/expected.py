@@ -18,17 +18,35 @@ DIRTY = {
     "rows_unique": 50,
     "rows_dup": 1,
     "outlier_cells": 7,
+    "quality_outlier_cells": 4,
+    "slow_service_cells": 3,
     "tested_cells": 98,
-    "score": "65.24",
+    "score": "71.36",
     "grade": "C",
-    "penalty_sum": "34.76",
+    "penalty_sum": "28.64",
 }
 
 DIRTY_PENALTIES = {
     "missing": ("0.0275", "0.3438", "10.31"),
     "duplicate": ("0.0196", "0.3267", "8.17"),
-    "outlier": ("0.0714", "0.7140", "14.28"),
+    "outlier": ("0.0408", "0.4080", "8.16"),
     "format": ("0.0040", "0.0800", "2.00"),
+}
+
+# 首响离群裁决：首响 > 处理时长×60 判数据缺陷（计扣），否则进慢服务复核（不计扣）
+ADJUDICATION = {
+    "flagged_cells": 6,
+    "quality_cells": 3,
+    "review_cells": 3,
+    "unverifiable_cells": 0,
+    "tickets": 5,
+    "quality_tickets": 2,
+    "review_tickets": 3,
+    "defect_linenos": [3, 35, 55],
+    "review_linenos": [11, 21, 51],
+    "defect_tickets": {"T-2026-000102": [3, 35], "T-2026-000155": [55]},
+    "review_tickets_map": {"T-2026-000110": [11], "T-2026-000120": [21],
+                           "T-2026-000151": [51]},
 }
 
 QUARANTINE = [(44, "Q_COLUMN_COUNT"), (45, "Q_COLUMN_COUNT"), (57, "Q_TRUNCATED_ROW")]

@@ -9,7 +9,7 @@ from __future__ import annotations
 from decimal import Decimal, ROUND_HALF_UP
 
 from ... import config
-from . import zscore
+from . import adjudicate, zscore
 
 
 def mark(profile: dict) -> dict:
@@ -67,15 +67,29 @@ def mark(profile: dict) -> dict:
             "outlier_linenos": [item["lineno"] for item in column_outliers[:12]],
         })
     cells.sort(key=lambda item: (item["column"], item["lineno"]))
+    adjudication, verdicts = adjudicate.split(profile["rows"], cells)
+    for cell in cells:
+        # 裁决只覆盖首响列；同一行号的其他列离群格不得带上裁决结论
+        if cell["column"] == config.RESPONSE_COLUMN and cell["lineno"] in verdicts:
+            scope = verdicts[cell["lineno"]]
+            cell["verdict"] = scope
+            cell["verdict_label"] = adjudicate.SCOPE_LABELS[scope]
+            cell["verdict_code"] = (adjudication["rule"]["defect_code"]
+                                    if scope == adjudicate.QUALITY
+                                    else adjudication["rule"]["review_code"])
     counts = {
         "numeric_columns": len(columns),
         "tested_cells": tested_total,
         "outlier_cells": outliers_total,
         "degenerate_columns": len(degenerate),
         "outlier_rate": _rate(outliers_total, tested_total),
+        # 计扣口径：离群格 − 慢服务复核格 = 计扣离群格（只反映数据缺陷）
+        "slow_service_cells": adjudication["counts"]["review_cells"],
+        "quality_outlier_cells": outliers_total
+                                 - adjudication["counts"]["review_cells"],
     }
     return {"columns": columns, "cells": cells, "counts": counts,
-            "degenerate": degenerate}
+            "degenerate": degenerate, "adjudication": adjudication}
 
 
 def _method_label(method: str) -> str:

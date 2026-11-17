@@ -14,6 +14,8 @@ EXPORTS = {
     "duplicates.csv": ("duplicates.csv", "text/csv; charset=utf-8",
                        csv_out.duplicates_csv),
     "outliers.csv": ("outliers.csv", "text/csv; charset=utf-8", csv_out.outliers_csv),
+    "adjudication.csv": ("adjudication.csv", "text/csv; charset=utf-8",
+                         csv_out.adjudication_csv),
     "quarantine.csv": ("quarantine.csv", "text/csv; charset=utf-8",
                        csv_out.quarantine_csv),
     "flags.csv": ("flags.csv", "text/csv; charset=utf-8", csv_out.flags_csv),

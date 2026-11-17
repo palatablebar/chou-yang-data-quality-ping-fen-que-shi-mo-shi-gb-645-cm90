@@ -19,8 +19,19 @@ def test_report_csv_has_bom_and_core_rows(client_with_run):
     assert text.startswith("\ufeff")
     assert "\r\n" in text
     assert f"总分,{expected.DIRTY['score']},分" in text
-    assert "扣分合计,34.76,分" in text
+    assert "扣分合计,28.64,分" in text
     assert f"等级,{expected.DIRTY['grade']}" in text
+
+
+def test_report_csv_carries_adjudication_counters(client_with_run):
+    """报告 CSV 与页面同口径：计扣离群格、两个范围的格数与工单数。"""
+    text = get_csv(client_with_run, "report.csv")
+    assert "计扣离群格,4,格" in text
+    assert "首响离群格,6,格" in text
+    assert "质量异常格,3,格" in text
+    assert "慢服务复核格,3,格" in text
+    assert "质量异常工单,2,工单" in text
+    assert "慢服务复核工单,3,工单" in text
 
 
 def test_csv_output_is_stable_across_requests(client_with_run):
@@ -63,6 +74,35 @@ def test_outliers_csv_matches_cells(client_with_run):
     assert "K_OUTLIER" in text
 
 
+def test_outliers_csv_carries_verdict_columns(client_with_run):
+    """离群导出与页面同口径：裁决范围、裁决原因码、是否计扣。"""
+    text = get_csv(client_with_run, "outliers.csv")
+    header = text.splitlines()[0].lstrip("\ufeff")
+    assert header.endswith("裁决范围,裁决原因码,计扣")
+    assert "质量异常,K_RESPONSE_GT_HANDLE,是" in text
+    assert "慢服务复核,K_SLOW_SERVICE,否" in text
+    # 计扣=是 的行数 = 计扣离群格（3 首响缺陷 + 1 处理时长离群）
+    charged = [line for line in text.splitlines()[1:] if line.endswith(",是")]
+    assert len(charged) == expected.DIRTY["quality_outlier_cells"]
+
+
+def test_adjudication_csv_lists_both_scopes(client_with_run):
+    """裁决导出：两个范围同出一份，逐格带工单号与行号，行数 = 首响离群格。"""
+    text = get_csv(client_with_run, "adjudication.csv")
+    lines = [line for line in text.splitlines() if line.strip()]
+    assert lines[0].lstrip("\ufeff").startswith("范围,工单号,行号,")
+    assert len(lines) == expected.ADJUDICATION["flagged_cells"] + 1
+    quality = [line for line in lines[1:] if line.startswith("质量异常,")]
+    review = [line for line in lines[1:] if line.startswith("慢服务复核,")]
+    assert len(quality) == expected.ADJUDICATION["quality_cells"]
+    assert len(review) == expected.ADJUDICATION["review_cells"]
+    assert "质量异常,T-2026-000102,3," in text
+    assert "质量异常,T-2026-000155,55," in text
+    assert "慢服务复核,T-2026-000110,11," in text
+    assert "K_RESPONSE_GT_HANDLE" in text
+    assert "K_SLOW_SERVICE" in text
+
+
 def test_missing_csv_has_runs_columns(client_with_run):
     text = get_csv(client_with_run, "missing.csv")
     assert "列名,列标题,缺失,有值,缺失率,连续段数,最长段" in text
@@ -77,9 +117,14 @@ def test_manifest_json_matches_run(client_with_run):
     assert payload["run_id"] == latest["run"]["run_id"]
     assert payload["input_digest"] == latest["run"]["digest"]
     assert payload["score"] == expected.DIRTY["score"]
-    assert len(payload["accounts"]) == 5
+    assert len(payload["accounts"]) == 7
     assert payload["all_balanced"] is True
     assert isinstance(payload["weights"], list) and len(payload["weights"]) == 4
+    assert payload["counters"]["quality_outlier_cells"] == \
+        expected.DIRTY["quality_outlier_cells"]
+    assert payload["counters"]["slow_service_cells"] == \
+        expected.DIRTY["slow_service_cells"]
+    assert payload["adjudication_rule"]["defect_code"] == "K_RESPONSE_GT_HANDLE"
 
 
 def test_export_without_run_returns_404(client):

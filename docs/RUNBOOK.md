@@ -45,7 +45,7 @@ curl -s http://127.0.0.1:18204/api/export/manifest.json
 
 | 文件 | 用途 | 期望结果 |
 |---|---|---|
-| `tickets_dirty.csv` | 主演示：哨兵、空白、重复、冲突、越界、分段、截断 | 65.24 分 C 级，隔离 3 行，2 段 |
+| `tickets_dirty.csv` | 主演示：哨兵、空白、重复、冲突、越界、分段、截断 | 71.36 分 C 级，隔离 3 行，2 段 |
 | `tickets_clean.csv` | 干净对照 | 100.00 分 A 级 |
 | `tickets_gbk.csv` | GB18030 + 中文表头 | 采信成功，标 `K_ALIAS_MAPPED` |
 | `tickets_bom.csv` | BOM + CRLF | 采信成功，标 `K_BOM_STRIPPED` |
@@ -83,6 +83,9 @@ python3 -m pytest -q
 ## 7 日志与排查
 
 - 容器日志：`docker compose logs -f app`。
-- 分数异常先看 `/batches` 的阈值表与五项对账；对账不平说明有单元格被重复计数。
+- 分数异常先看 `/batches` 的阈值表与七项对账；对账不平说明有单元格被重复计数。
+- 首响离群先分范围再追责：`/outliers` 与报告页的「首响离群裁决」把长值分成
+  质量异常（首响 > 处理时长×60，计扣）与慢服务复核（物理自洽或无法核对，不计扣），
+  两个范围与 `adjudication.csv` 逐行一致。
 - 离群数为 0 时先看 `/outliers` 的「退化列」：满意度一类 1-5 分刻度默认判退化。
 - 每份导出都能在 `/api/export/manifest.json` 里找到同一次运行的 `run_id` 与输入摘要。

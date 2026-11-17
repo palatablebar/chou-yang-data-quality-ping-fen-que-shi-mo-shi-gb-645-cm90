@@ -48,6 +48,11 @@ def export_outliers(run_id: str | None = None, ctx: Ctx = Depends(get_ctx)):
     return service.export(ctx.store, "outliers.csv", run_id)
 
 
+@router.get("/api/export/adjudication.csv")
+def export_adjudication(run_id: str | None = None, ctx: Ctx = Depends(get_ctx)):
+    return service.export(ctx.store, "adjudication.csv", run_id)
+
+
 @router.get("/api/export/quarantine.csv")
 def export_quarantine(run_id: str | None = None, ctx: Ctx = Depends(get_ctx)):
     return service.export(ctx.store, "quarantine.csv", run_id)

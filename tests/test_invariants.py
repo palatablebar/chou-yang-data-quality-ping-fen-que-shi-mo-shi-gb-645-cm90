@@ -84,3 +84,36 @@ def test_missing_penalty_is_monotonic(settings):
     missing_dims = {item["key"]: item for item in missing["dims"]}
     assert Decimal(missing_dims["missing"]["penalty"]) > Decimal(clean_dims["missing"]["penalty"])
     assert Decimal(missing["score"]) < Decimal(clean["score"])
+
+
+def test_adjudication_partition_holds_for_all_samples(settings):
+    """裁决分区：首响离群格 = 质量异常 + 慢服务复核；工单两范围互斥；
+    计扣离群格 = 离群格 − 慢服务复核格；每条结论都能回到原始行。"""
+    for name in SAMPLES:
+        payload = dirty_cases.pipeline_sample(settings, name)
+        outliers = payload["outliers"]
+        adjudication = outliers["adjudication"]
+        counts = adjudication["counts"]
+        assert counts["flagged_cells"] == \
+            counts["quality_cells"] + counts["review_cells"], name
+        assert counts["tickets"] == \
+            counts["quality_tickets"] + counts["review_tickets"], name
+        assert outliers["counts"]["quality_outlier_cells"] == \
+            outliers["counts"]["outlier_cells"] - outliers["counts"]["slow_service_cells"], name
+        ids = [item["ticket_id"] for item in adjudication["tickets"]]
+        assert len(ids) == len(set(ids)), name
+        rows = {row["lineno"]: row for row in payload["profile"]["rows"]}
+        for entry in adjudication["defects"] + adjudication["reviews"]:
+            assert entry["lineno"] in rows, name
+            assert entry["raw"] == \
+                rows[entry["lineno"]]["cells"]["first_response_min"]["raw"], name
+
+
+def test_slow_service_never_deducted_for_all_samples(settings):
+    """质量扣分只反映数据缺陷：离群维分子恒等于计扣离群格。"""
+    for name in SAMPLES:
+        payload = dirty_cases.pipeline_sample(settings, name)
+        evaluated = dirty_cases.score_of(payload)
+        dims = {item["key"]: item for item in evaluated["dims"]}
+        assert dims["outlier"]["numerator"] == \
+            payload["outliers"]["counts"]["quality_outlier_cells"], name

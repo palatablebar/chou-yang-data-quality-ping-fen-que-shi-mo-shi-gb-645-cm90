@@ -1,0 +1,79 @@
+{# 首响离群裁决区块：报告页与离群页共用，调用方先 {% set adj = ... %} #}
+<section class="block">
+  <h2 class="block__title">首响离群裁决
+    <span class="block__hint">{{ adj.rule.text }}</span></h2>
+  <p class="statline">
+    <span>首响离群格 <b class="num">{{ adj.counts.flagged_cells }}</b></span>
+    <span>质量异常 <b class="num">{{ adj.counts.quality_cells }}</b> 格 /
+      <b class="num">{{ adj.counts.quality_tickets }}</b> 工单（计扣）</span>
+    <span>慢服务复核 <b class="num">{{ adj.counts.review_cells }}</b> 格 /
+      <b class="num">{{ adj.counts.review_tickets }}</b> 工单（不计扣）</span>
+    {% if adj.counts.unverifiable_cells %}<span>其中无法核对
+      <b class="num">{{ adj.counts.unverifiable_cells }}</b> 格</span>{% endif %}
+  </p>
+  <p class="links"><a class="link" href="/api/export/adjudication.csv">导出裁决 CSV</a></p>
+</section>
+
+<section class="block">
+  <h2 class="block__title">质量异常范围
+    <span class="block__hint">首响超总处理时长，计入质量扣分</span></h2>
+  {% if adj.defects %}
+  <table class="ledger ledger--wide" data-sortable>
+    <thead>
+      <tr><th>工单号</th><th class="num">行号</th><th class="num">原值</th>
+          <th class="num">归一值(分钟)</th><th class="num">z</th>
+          <th class="num">处理时长(小时)</th><th class="num">首响上限(分钟)</th>
+          <th>原因码</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      {% for item in adj.defects %}
+      <tr>
+        <td class="mono">{{ item.ticket_id or "—" }}</td>
+        <td class="num">{{ item.lineno }}</td>
+        <td class="num mono">{{ item.raw }}</td>
+        <td class="num">{{ item.value }}</td>
+        <td class="num">{{ item.z }}</td>
+        <td class="num">{{ item.handle_hours }}</td>
+        <td class="num">{{ item.limit_min }}</td>
+        <td class="mono">{{ item.code }}</td>
+        <td>{{ item.note }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">没有数据缺陷的首响离群。</p>
+  {% endif %}
+</section>
+
+<section class="block">
+  <h2 class="block__title">慢服务复核范围
+    <span class="block__hint">物理自洽或无法核对，不计入质量扣分，交服务侧复核</span></h2>
+  {% if adj.reviews %}
+  <table class="ledger ledger--wide" data-sortable>
+    <thead>
+      <tr><th>工单号</th><th class="num">行号</th><th class="num">原值</th>
+          <th class="num">归一值(分钟)</th><th class="num">z</th>
+          <th class="num">处理时长(小时)</th><th class="num">首响上限(分钟)</th>
+          <th>原因码</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      {% for item in adj.reviews %}
+      <tr>
+        <td class="mono">{{ item.ticket_id or "—" }}</td>
+        <td class="num">{{ item.lineno }}</td>
+        <td class="num mono">{{ item.raw }}</td>
+        <td class="num">{{ item.value }}</td>
+        <td class="num">{{ item.z }}</td>
+        <td class="num">{{ item.handle_hours or "—" }}</td>
+        <td class="num">{{ item.limit_min or "—" }}</td>
+        <td class="mono">{{ item.code }}</td>
+        <td>{{ item.note }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">没有需要复核的慢服务工单。</p>
+  {% endif %}
+</section>

@@ -56,7 +56,7 @@
   <h2 class="block__title">离群格</h2>
   {% if outliers.cells %}
   <table class="ledger">
-    <thead><tr><th>列</th><th class="num">行号</th><th class="num">原值</th><th class="num">归一值</th><th class="num">z</th><th>原因码</th></tr></thead>
+    <thead><tr><th>列</th><th class="num">行号</th><th class="num">原值</th><th class="num">归一值</th><th class="num">z</th><th>原因码</th><th>裁决</th></tr></thead>
     <tbody>
       {% for cell in outliers.cells %}
       <tr>
@@ -66,6 +66,7 @@
         <td class="num">{{ cell.value }}</td>
         <td class="num">{{ cell.z }}</td>
         <td class="mono">{{ cell.code }}</td>
+        <td>{% if cell.verdict %}<span class="tag">{{ cell.verdict_label }}</span>{% else %}<span class="dash">—</span>{% endif %}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -75,9 +76,15 @@
   {% endif %}
 </section>
 
+{% set adj = outliers.adjudication %}
+{% include "_adjudication.html" %}
+
 <section class="block">
   <h2 class="block__title">导出</h2>
-  <p class="links"><a class="link" href="/api/export/outliers.csv">导出离群</a></p>
+  <p class="links">
+    <a class="link" href="/api/export/outliers.csv">导出离群</a>
+    <a class="link" href="/api/export/adjudication.csv">导出裁决</a>
+  </p>
 </section>
 {% else %}
 <p class="empty">还没有运行记录。</p>

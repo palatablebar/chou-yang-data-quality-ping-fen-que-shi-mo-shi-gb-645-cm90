@@ -125,15 +125,29 @@ def test_manifest_carries_digest_and_thresholds(dirty_result):
     assert [stage["stage"] for stage in manifest["stages"]] == list(config.STAGES)
 
 
-def test_five_accounts_balanced(dirty_result):
+def test_seven_accounts_balanced(dirty_result):
     reconcile = dirty_result["reconcile"]
     assert [item["key"] for item in reconcile["accounts"]] == [
-        "rows", "accepted", "cells", "value", "score"]
+        "rows", "accepted", "cells", "value", "score",
+        "outlier_split", "ticket_split"]
     for item in reconcile["accounts"]:
         assert Decimal(str(item["diff"])) == 0, item["key"]
         assert item["balanced"] is True
     assert reconcile["diff_count"] == 0
     assert reconcile["all_balanced"] is True
+
+
+def test_adjudication_accounts_match_counts(dirty_result):
+    """离群裁决账与裁决工单账的左右两侧来自同一份裁决计数。"""
+    accounts = {item["key"]: item for item in dirty_result["reconcile"]["accounts"]}
+    counts = dirty_result["outliers"]["adjudication"]["counts"]
+    split = accounts["outlier_split"]
+    assert Decimal(split["left"]) == counts["flagged_cells"]
+    assert Decimal(split["right"]) == counts["quality_cells"] + counts["review_cells"]
+    tickets = accounts["ticket_split"]
+    assert Decimal(tickets["left"]) == counts["tickets"]
+    assert Decimal(tickets["right"]) == \
+        counts["quality_tickets"] + counts["review_tickets"]
 
 
 def test_batches_api_lists_runs(client):
@@ -153,7 +167,8 @@ def test_batches_api_lists_runs(client):
 def test_reconcile_api_returns_accounts(client_with_run):
     body = client_with_run.get("/api/reconcile").json()
     assert [item["key"] for item in body["accounts"]] == [
-        "rows", "accepted", "cells", "value", "score"]
+        "rows", "accepted", "cells", "value", "score",
+        "outlier_split", "ticket_split"]
     assert body["all_balanced"] is True
 
 

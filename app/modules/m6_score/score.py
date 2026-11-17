@@ -1,8 +1,10 @@
-"""评分：五个维度各自封顶，总分 = 100 − 各维扣分。
+"""评分：四个维度各自封顶，总分 = 100 − 各维扣分。
 
 每维扣分 = 封顶分 × min(1, 实际比率 / 容忍度)，量化到 0.01（ROUND_HALF_UP）。
 封顶是硬上限：比率再高也不会把该维扣成负分，所以总分恒在 [0, 100]，
 且「总分 + 扣分之和 = 100」逐位成立。
+离群维分子只计数据缺陷格（quality_outlier_cells）：慢服务复核是服务表现，
+不是数据缺陷，不参与质量扣分。
 """
 from __future__ import annotations
 
@@ -21,6 +23,17 @@ def rate(numerator: int, denominator: int) -> Decimal:
         config.RATE_QUANT, rounding=ROUND_HALF_UP)
 
 
+def quality_outliers(counts: dict) -> int:
+    """计扣离群格：只含数据缺陷（慢服务复核格不扣）。
+
+    缺省回退旧口径（全部离群格计扣），保证只传 outlier_cells 的调用方
+    结果不变。
+    """
+    if "quality_outlier_cells" in counts:
+        return counts["quality_outlier_cells"]
+    return counts.get("outlier_cells", 0)
+
+
 def ratios(counts: dict) -> dict:
     cells_total = counts.get("cells_total", 0)
     cells_missing = counts.get("cells_missing", 0)
@@ -28,7 +41,7 @@ def ratios(counts: dict) -> dict:
     return {
         "missing": rate(cells_missing, cells_total),
         "duplicate": rate(counts.get("rows_dup", 0), counts.get("rows_accepted", 0)),
-        "outlier": rate(counts.get("outlier_cells", 0), counts.get("tested_cells", 0)),
+        "outlier": rate(quality_outliers(counts), counts.get("tested_cells", 0)),
         "format": rate(counts.get("format_bad", 0), non_missing),
     }
 
@@ -38,7 +51,7 @@ def penalties(counts: dict) -> list[dict]:
     numerators = {
         "missing": counts.get("cells_missing", 0),
         "duplicate": counts.get("rows_dup", 0),
-        "outlier": counts.get("outlier_cells", 0),
+        "outlier": quality_outliers(counts),
         "format": counts.get("format_bad", 0),
     }
     denominators = {
@@ -94,5 +107,6 @@ def evaluate(counts: dict) -> dict:
         "closed": (total + penalty_sum == config.HUNDRED),
         "weights": [{"key": item["key"], "label": item["label"], "cap": item["cap"],
                      "tolerance": item["tolerance"]} for item in config.WEIGHTS],
-        "formula": "100 − 缺失30 − 重复25 − 离群20 − 格式25，每维按容忍度封顶",
+        "formula": "100 − 缺失30 − 重复25 − 离群20 − 格式25，每维按容忍度封顶；"
+                   "离群维只计数据缺陷格，慢服务复核格不扣",
     }

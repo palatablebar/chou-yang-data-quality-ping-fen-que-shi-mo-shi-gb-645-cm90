@@ -44,6 +44,9 @@
   </table>
 </section>
 
+{% set adj = report.adjudication %}
+{% include "_adjudication.html" %}
+
 <section class="block">
   <h2 class="block__title">列缺失</h2>
   <figure class="chart" data-chart data-max="100">
@@ -71,7 +74,7 @@
 </section>
 
 <section class="block">
-  <h2 class="block__title">对账<span class="block__hint">{% if report.balanced %}五项平衡{% else %}差异 {{ report.accounts|selectattr("balanced", "equalto", false)|list|length }} 项{% endif %}</span></h2>
+  <h2 class="block__title">对账<span class="block__hint">{% if report.balanced %}七项平衡{% else %}差异 {{ report.accounts|selectattr("balanced", "equalto", false)|list|length }} 项{% endif %}</span></h2>
   <table class="ledger">
     <thead>
       <tr><th>账</th><th class="num">左侧</th><th class="num">右侧</th><th class="num">差额</th><th>结论</th></tr>
@@ -104,6 +107,8 @@
     <li class="pair"><span class="pair__key">缺失格</span><span class="pair__value num">{{ report.counters.cells_missing|intf }}</span></li>
     <li class="pair"><span class="pair__key">格式不合格格</span><span class="pair__value num">{{ report.counters.cells_format_bad|intf }}</span></li>
     <li class="pair"><span class="pair__key">离群格</span><span class="pair__value num">{{ report.counters.outlier_cells|intf }}</span></li>
+    <li class="pair"><span class="pair__key">计扣离群格</span><span class="pair__value num">{{ report.counters.quality_outlier_cells|intf }}</span></li>
+    <li class="pair"><span class="pair__key">慢服务复核格</span><span class="pair__value num">{{ report.counters.slow_service_cells|intf }}</span></li>
     <li class="pair"><span class="pair__key">参检格</span><span class="pair__value num">{{ report.counters.tested_cells|intf }}</span></li>
   </ul>
 </section>
@@ -155,6 +160,7 @@
   <p class="links">
     <a class="link" href="/api/export/report.csv">报告 CSV</a>
     <a class="link" href="/api/export/profile.csv">画像 CSV</a>
+    <a class="link" href="/api/export/adjudication.csv">裁决 CSV</a>
     <a class="link" href="/api/export/quarantine.csv">隔离区 CSV</a>
     <a class="link" href="/api/export/manifest.json">运行清单 JSON</a>
   </p>
